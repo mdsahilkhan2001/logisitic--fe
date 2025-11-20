@@ -1,4 +1,7 @@
- import { baseApi } from '../../services/baseApi'
+import { baseApi } from '../../services/baseApi'
+import { setCredentials } from './authSlice'
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
 
 export const authApiSlice = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -44,6 +47,22 @@ export const authApiSlice = baseApi.injectEndpoints({
     getMe: builder.query({
       query: () => '/users/me/',  // ✅ Changed from /auth/users/me/
       providesTags: ['Auth'],
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled
+          dispatch(setCredentials({ user: data }))
+        } catch (error) {
+          // noop: handled by consumers
+        }
+      },
+    }),
+
+    changePassword: builder.mutation({
+      query: (payload) => ({
+        url: '/users/change-password/',
+        method: 'POST',
+        body: payload,
+      }),
     }),
     
     updateMe: builder.mutation({
@@ -53,6 +72,73 @@ export const authApiSlice = baseApi.injectEndpoints({
         body: data,
       }),
       invalidatesTags: ['Auth'],
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled
+          dispatch(setCredentials({ user: data }))
+          try {
+            dispatch(
+              baseApi.util.updateQueryData('getMe', undefined, (draft) => {
+                if (draft) {
+                  Object.assign(draft, data)
+                }
+              }),
+            )
+          } catch (cacheError) {
+            // No cached /users/me request to update; safe to ignore
+          }
+        } catch (error) {
+          // noop: handled elsewhere
+        }
+      },
+    }),
+
+    updateProfilePicture: builder.mutation({
+      async queryFn(file, { getState }) {
+        const token = getState().auth.token
+        const formData = new FormData()
+        formData.append('profile_picture', file)
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/users/me/`, {
+            method: 'PATCH',
+            headers: {
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: formData,
+          })
+
+          const data = await response.json()
+
+          if (!response.ok) {
+            return { error: { status: response.status, data } }
+          }
+
+          return { data }
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', data: error } }
+        }
+      },
+      invalidatesTags: ['Auth'],
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled
+          dispatch(setCredentials({ user: data }))
+          try {
+            dispatch(
+              baseApi.util.updateQueryData('getMe', undefined, (draft) => {
+                if (draft) {
+                  Object.assign(draft, data)
+                }
+              }),
+            )
+          } catch (cacheError) {
+            // No cached /users/me request to update; ignore
+          }
+        } catch (error) {
+          // ignored; component will surface errors
+        }
+      },
     }),
     
     getAllUsers: builder.query({
@@ -77,6 +163,8 @@ export const {
   useRefreshTokenMutation,
   useGetMeQuery,
   useUpdateMeMutation,
+  useUpdateProfilePictureMutation,
   useGetAllUsersQuery,
   useLogoutMutation,
+  useChangePasswordMutation,
 } = authApiSlice
