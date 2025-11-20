@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes toast-shrink {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
 @layer base {
   * {
     @apply border-gray-200 dark:border-gray-700;
@@ -9,6 +18,12 @@
 
   body {
     @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-white;
+  }
+}
+
+@layer utilities {
+  .animate-toast-shrink {
+    animation: toast-shrink 2.5s linear forwards;
   }
 }
 

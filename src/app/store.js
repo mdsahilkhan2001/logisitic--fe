@@ -27,11 +27,12 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        // Ignore these action types
         ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
-        // Ignore these field paths in all actions
-        ignoredActionPaths: ['meta.arg', 'payload.timestamp'],
-        // Ignore these paths in the state
+        ignoredActionPaths: [
+          'meta.arg',
+          'meta.baseQueryMeta',
+          'payload.timestamp',
+        ],
         ignoredPaths: ['items.dates'],
       },
     }).concat(baseApi.middleware),

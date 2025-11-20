@@ -30,28 +30,30 @@ export const AuthProvider = ({ children }) => {
   const loginUser = async (username, password) => {
     try {
       const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/token/`,
+        `${import.meta.env.VITE_API_BASE_URL}/login/`,
         { username, password }
       )
-      
+
       const tokens = {
         access: response.data.access,
         refresh: response.data.refresh,
       }
-      
-      const decoded = jwtDecode(tokens.access)
-      
+
+      // Prefer explicit user object returned by API over decoded claims
+      const apiUser = response.data.user || {
+        id: response.data.user_id,
+        username: response.data.username,
+        role: response.data.role,
+        email: response.data.email,
+      }
+
       setAuthTokens(tokens)
-      setUser({
-        id: decoded.user_id,
-        username: decoded.username,
-        role: decoded.role,
-      })
-      
+      setUser(apiUser)
+
       localStorage.setItem('authTokens', JSON.stringify(tokens))
       toast.success('Login successful!')
-      
-      return decoded.role
+
+      return apiUser.role
     } catch (error) {
       toast.error('Invalid credentials')
       throw error

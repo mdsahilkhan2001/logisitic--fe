@@ -12,6 +12,17 @@ export const ordersApiSlice = baseApi.injectEndpoints({
             ]
           : [{ type: 'Order', id: 'LIST' }],
     }),
+
+    getMyOrders: builder.query({
+      query: () => '/orders/my/',
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.map(({ id }) => ({ type: 'Order', id })),
+              { type: 'Order', id: 'MY_LIST' },
+            ]
+          : [{ type: 'Order', id: 'MY_LIST' }],
+    }),
     
     getOrderById: builder.query({
       query: (id) => `/orders/${id}/`,
@@ -75,6 +86,7 @@ export const ordersApiSlice = baseApi.injectEndpoints({
 
 export const {
   useGetAllOrdersQuery,
+  useGetMyOrdersQuery,
   useGetOrderByIdQuery,
   useGetDesignerOrdersQuery,
   useUploadDesignMutation,

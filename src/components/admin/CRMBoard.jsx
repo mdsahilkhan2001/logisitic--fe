@@ -1,5 +1,5 @@
- import { useState } from 'react'
-import { useGetAllLeadsQuery, useUpdateLeadStageMutation } from '@/features/leads/leadsApiSlice'
+import { useState } from 'react'
+import { useGetAllLeadsQuery, useUpdateLeadMutation } from '@/features/leads/leadsApiSlice'
 import { useSendMessageMutation } from '@/features/whatsapp/whatsappApiSlice'
 import toast from 'react-hot-toast'
 import { FaPlus, FaEllipsisV, FaWhatsapp, FaEye, FaEdit } from 'react-icons/fa'
@@ -7,24 +7,21 @@ import { motion } from 'framer-motion'
 
 const CRMBoard = () => {
   const { data: leads, isLoading } = useGetAllLeadsQuery()
-  const [updateStage] = useUpdateLeadStageMutation()
+  const [updateLead] = useUpdateLeadMutation()
   const [sendMessage] = useSendMessageMutation()
   const [draggedItem, setDraggedItem] = useState(null)
   const [selectedLead, setSelectedLead] = useState(null)
 
   const stages = [
-    { id: 'leads', title: 'New Leads', color: 'bg-blue-500', icon: '📋' },
+    { id: 'new', title: 'New Leads', color: 'bg-blue-500', icon: '📋' },
     { id: 'contacted', title: 'Contacted', color: 'bg-purple-500', icon: '📞' },
-    { id: 'costing', title: 'Costing', color: 'bg-indigo-500', icon: '💰' },
-    { id: 'pi_sent', title: 'PI Sent', color: 'bg-cyan-500', icon: '📄' },
-    { id: 'production', title: 'Production', color: 'bg-yellow-500', icon: '⚙️' },
-    { id: 'qc', title: 'Quality Check', color: 'bg-orange-500', icon: '✓' },
-    { id: 'shipment', title: 'Shipment', color: 'bg-green-500', icon: '🚚' },
-    { id: 'completed', title: 'Completed', color: 'bg-gray-500', icon: '✔️' },
+    { id: 'qualified', title: 'Qualified', color: 'bg-indigo-500', icon: '💰' },
+    { id: 'converted', title: 'Converted', color: 'bg-green-500', icon: '🚚' },
+    { id: 'lost', title: 'Lost', color: 'bg-gray-500', icon: '✖️' },
   ]
 
   const getLeadsByStage = (stage) => {
-    return leads?.filter(lead => lead.stage === stage || (!lead.stage && stage === 'leads')) || []
+    return leads?.filter((lead) => (lead.status || 'new') === stage) || []
   }
 
   const handleDragStart = (e, lead) => {
@@ -43,8 +40,8 @@ const CRMBoard = () => {
     if (!draggedItem) return
 
     try {
-      await updateStage({ id: draggedItem.id, stage: newStage }).unwrap()
-      toast.success(`Lead moved to ${stages.find(s => s.id === newStage)?.title}`)
+      await updateLead({ id: draggedItem.id, status: newStage }).unwrap()
+      toast.success(`Lead moved to ${stages.find((s) => s.id === newStage)?.title}`)
       setDraggedItem(null)
     } catch (error) {
       toast.error('Failed to update stage')
@@ -101,12 +98,12 @@ const CRMBoard = () => {
           <div className="card bg-purple-50 dark:bg-purple-900/20">
             <p className="text-sm text-gray-600 dark:text-gray-400">Conversion Rate</p>
             <p className="text-2xl font-bold text-purple-600">
-              {leads?.length ? ((getLeadsByStage('completed').length / leads.length) * 100).toFixed(1) : 0}%
+              {leads?.length ? ((getLeadsByStage('converted').length / leads.length) * 100).toFixed(1) : 0}%
             </p>
           </div>
           <div className="card bg-orange-50 dark:bg-orange-900/20">
-            <p className="text-sm text-gray-600 dark:text-gray-400">In Production</p>
-            <p className="text-2xl font-bold text-orange-600">{getLeadsByStage('production').length}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Active Leads</p>
+            <p className="text-2xl font-bold text-orange-600">{(leads || []).filter((lead) => lead.status !== 'lost').length}</p>
           </div>
         </div>
       </div>
@@ -278,7 +275,7 @@ const CRMBoard = () => {
                 </div>
                 <div>
                   <label className="text-sm text-gray-600 dark:text-gray-400">Stage</label>
-                  <p className="font-medium capitalize">{selectedLead.stage || 'new'}</p>
+                  <p className="font-medium capitalize">{selectedLead.status || 'new'}</p>
                 </div>
               </div>
               

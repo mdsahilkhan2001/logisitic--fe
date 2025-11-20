@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { useAuth } from './hooks/useAuth'
+import { useGetMeQuery } from './features/auth/authApiSlice'
 
 // Layouts (Non-lazy loaded for instant rendering)
 import PublicLayout from './layouts/PublicLayout'
@@ -10,6 +11,7 @@ import AuthLayout from './layouts/AuthLayout'
 
 // Auth Components (Non-lazy for login speed)
 import Login from './components/auth/Login'
+import RegisterPage from './pages/RegisterPage'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import RoleRoute from './components/auth/RoleRoute'
 
@@ -20,7 +22,10 @@ import ErrorBoundary from './components/common/ErrorBoundary'
 // Lazy-loaded Public Pages
 const Home = lazy(() => import('./components/public/Home'))
 const About = lazy(() => import('./components/public/About'))
-const Products = lazy(() => import('./components/public/Products'))
+// Replace legacy Products component with new ProductsPage
+const Products = lazy(() => import('./pages/ProductsPage'))
+const ProfilePage = lazy(() => import('./pages/ProfilePage'))
+const SellerPage = lazy(() => import('./pages/SellerPage'))
 const Services = lazy(() => import('./components/public/Services'))
 const Contact = lazy(() => import('./components/public/Contact'))
 
@@ -29,6 +34,7 @@ const BuyerDashboard = lazy(() => import('./components/buyer/BuyerDashboard'))
 const MyOrders = lazy(() => import('./components/buyer/MyOrders'))
 const DocumentsView = lazy(() => import('./components/buyer/DocumentsView'))
 const TrackShipment = lazy(() => import('./components/buyer/TrackShipment'))
+const Wishlist = lazy(() => import('./components/buyer/Wishlist'))
 
 const SalesmanDashboard = lazy(() => import('./components/salesman/SalesmanDashboard'))
 const LeadsBoard = lazy(() => import('./components/salesman/LeadsBoard'))
@@ -52,7 +58,8 @@ const NotFound = lazy(() => import('./components/error/NotFound'))
 const Unauthorized = lazy(() => import('./components/error/Unauthorized'))
 
 function App() {
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated, user, token } = useAuth()
+  useGetMeQuery(undefined, { skip: !token, refetchOnMountOrArgChange: false })
 
   // Auto-redirect to role dashboard if already logged in
   const getDefaultRedirect = () => {
@@ -60,6 +67,7 @@ function App() {
     
     const roleRoutes = {
       buyer: '/buyer',
+      seller: '/seller',
       salesman: '/salesman',
       designer: '/designer',
       admin: '/admin',
@@ -71,12 +79,15 @@ function App() {
   return (
     <ErrorBoundary>
       <Toaster 
-        position="top-right"
+        position="bottom-right"
         toastOptions={{
-          duration: 3000,
+          duration: 2800,
           style: {
-            background: '#363636',
-            color: '#fff',
+            background: '#1f2937',
+            color: '#f9fafb',
+            borderRadius: '16px',
+            padding: '12px 16px',
+            border: '1px solid #374151',
           },
           success: {
             duration: 3000,
@@ -86,7 +97,7 @@ function App() {
             },
           },
           error: {
-            duration: 4000,
+            duration: 3500,
             iconTheme: {
               primary: '#ef4444',
               secondary: '#fff',
@@ -100,8 +111,10 @@ function App() {
           {/* Public Routes */}
           <Route element={<PublicLayout />}>
             <Route path="/" element={<Home />} />
+            <Route path="/buyer" element={<Home />} />
             <Route path="/about" element={<About />} />
             <Route path="/products" element={<Products />} />
+            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/services" element={<Services />} />
             <Route path="/contact" element={<Contact />} />
           </Route>
@@ -117,6 +130,16 @@ function App() {
                   <Login />
                 )
               } 
+            />
+            <Route
+              path="/register"
+              element={
+                isAuthenticated ? (
+                  <Navigate to={getDefaultRedirect()} replace />
+                ) : (
+                  <RegisterPage />
+                )
+              }
             />
           </Route>
 
@@ -134,10 +157,12 @@ function App() {
               element={
                 <RoleRoute allowedRoles={['buyer']}>
                   <Routes>
-                    <Route index element={<BuyerDashboard />} />
-                    <Route path="orders" element={<MyOrders />} />
-                    <Route path="documents" element={<DocumentsView />} />
-                    <Route path="shipments" element={<TrackShipment />} />
+                    <Route index element={<Navigate to="/buyer?view=dashboard" replace />} />
+                    <Route path="orders" element={<Navigate to="/buyer?view=orders" replace />} />
+                    <Route path="wishlist" element={<Navigate to="/buyer?view=wishlist" replace />} />
+                    <Route path="documents" element={<Navigate to="/buyer?view=documents" replace />} />
+                    <Route path="shipments" element={<Navigate to="/buyer?view=trackorder" replace />} />
+                    <Route path="profile" element={<Navigate to="/buyer?view=profile" replace />} />
                     <Route path="*" element={<Navigate to="/buyer" replace />} />
                   </Routes>
                 </RoleRoute>
@@ -194,6 +219,16 @@ function App() {
                     <Route path="documents" element={<DocumentTemplates />} />
                     <Route path="*" element={<Navigate to="/admin" replace />} />
                   </Routes>
+                </RoleRoute>
+              }
+            />
+
+            {/* Seller Routes */}
+            <Route
+              path="/seller/*"
+              element={
+                <RoleRoute allowedRoles={['seller','admin']}>
+                  <SellerPage />
                 </RoleRoute>
               }
             />

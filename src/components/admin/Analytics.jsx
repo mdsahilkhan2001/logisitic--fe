@@ -1,4 +1,4 @@
-import { FaTrendingUp, FaTrendingDown, FaChartBar, FaDownload } from 'react-icons/fa'
+import { FaArrowUp, FaArrowDown, FaChartBar, FaDownload } from 'react-icons/fa'
 import { motion } from 'framer-motion'
 
 const Analytics = () => {
@@ -84,9 +84,9 @@ const Analytics = () => {
             <div className="flex items-start justify-between mb-2">
               <p className="text-gray-600 dark:text-gray-400 text-sm">{metric.label}</p>
               {metric.trend === 'up' ? (
-                <FaTrendingUp className="text-green-500" />
+                <FaArrowUp className="text-green-500" />
               ) : (
-                <FaTrendingDown className="text-red-500" />
+                <FaArrowDown className="text-red-500" />
               )}
             </div>
             <p className={`text-3xl font-bold mb-2 ${metric.color}`}>{metric.value}</p>

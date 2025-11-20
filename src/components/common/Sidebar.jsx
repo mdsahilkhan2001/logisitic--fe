@@ -1,23 +1,73 @@
- import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { 
-  FaHome, FaUsers, FaChartLine, FaCog, FaBox, 
-  FaFileAlt, FaTruck, FaPalette, FaMoneyBill,
-  FaClipboardCheck, FaChevronRight
+import {
+  FaHome,
+  FaUsers,
+  FaChartLine,
+  FaCog,
+  FaBox,
+  FaFileAlt,
+  FaTruck,
+  FaPalette,
+  FaMoneyBill,
+  FaClipboardCheck,
+  FaChevronRight,
+  FaHeart,
+  FaFileInvoiceDollar,
+  FaSignOutAlt,
 } from 'react-icons/fa'
 import { useAuth } from '@/hooks/useAuth'
+import { useDispatch } from 'react-redux'
+import { logout } from '@/features/auth/authSlice'
+import buyerNavItems from '@/constants/buyerNavItems'
+import sellerNavItems from '@/constants/sellerNavItems'
 
 const Sidebar = () => {
   const { user } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
+  const dispatch = useDispatch()
+  const locationSearch = new URLSearchParams(location.search)
+  const currentBuyerView = locationSearch.get('view') || ''
+
+  const formatTarget = (target) => {
+    if (!target) return undefined
+    if (typeof target === 'string') return target
+    return {
+      pathname: target.pathname,
+      search: target.search,
+    }
+  }
+
+  const deriveActivePath = (target) => {
+    if (!target) return ''
+    if (typeof target === 'string') return target
+    return target.pathname || ''
+  }
 
   const menuItems = {
-    buyer: [
-      { path: '/buyer', icon: FaHome, label: 'Dashboard' },
-      { path: '/buyer/orders', icon: FaBox, label: 'My Orders' },
-      { path: '/buyer/documents', icon: FaFileAlt, label: 'Documents' },
-      { path: '/buyer/shipments', icon: FaTruck, label: 'Track Shipment' },
-    ],
+    buyer: buyerNavItems.map((item) => {
+      const target = item.sidebarTo || item.overlayTo
+      return {
+        id: item.id,
+        icon: item.icon,
+        label: item.label,
+        to: formatTarget(target),
+        activePath: deriveActivePath(target),
+        view: item.view,
+      }
+    }),
+    seller: sellerNavItems.map((item) => {
+      const target = item.sidebarTo || item.overlayTo
+      return {
+        id: item.id,
+        icon: item.icon,
+        label: item.label,
+        to: formatTarget(target),
+        activePath: deriveActivePath(target),
+        view: item.view,
+      }
+    }),
     salesman: [
       { path: '/salesman', icon: FaHome, label: 'Dashboard' },
       { path: '/salesman/leads', icon: FaUsers, label: 'Leads' },
@@ -41,6 +91,11 @@ const Sidebar = () => {
   }
 
   const currentMenu = menuItems[user?.role] || []
+
+  const handleLogout = () => {
+    dispatch(logout())
+    navigate('/login')
+  }
 
   return (
     <aside className="w-64 bg-white dark:bg-dark-card border-r border-gray-200 dark:border-dark-border min-h-screen flex flex-col">
@@ -67,12 +122,24 @@ const Sidebar = () => {
       <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
         {currentMenu.map((item) => {
           const Icon = item.icon
-          const isActive = location.pathname === item.path
+          const to = item.to || item.path
+          const activePath = item.activePath || (typeof to === 'string' ? to : to?.pathname)
+          const isBuyerRole = user?.role === 'buyer'
+          const isBuyerNav = isBuyerRole && item.view
+          let isActive = false
+
+          if (isBuyerNav) {
+            isActive = location.pathname === '/buyer' && currentBuyerView === item.view
+          } else if (isBuyerRole && location.pathname === '/buyer') {
+            isActive = !currentBuyerView && activePath === '/buyer'
+          } else if (activePath) {
+            isActive = location.pathname === activePath
+          }
 
           return (
             <Link
-              key={item.path}
-              to={item.path}
+              key={item.id || activePath || item.label}
+              to={to}
               className="relative group"
             >
               <motion.div
@@ -112,15 +179,13 @@ const Sidebar = () => {
 
       {/* Sidebar Footer */}
       <div className="p-4 border-t border-gray-200 dark:border-dark-border">
-        <div className="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 p-4 rounded-lg">
-          <p className="text-sm font-semibold mb-1">Need Help?</p>
-          <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
-            Contact support for assistance
-          </p>
-          <button className="w-full text-xs py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition">
-            Get Support
-          </button>
-        </div>
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition"
+        >
+          <FaSignOutAlt />
+          <span>Logout</span>
+        </button>
       </div>
     </aside>
   )
