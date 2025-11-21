@@ -1,11 +1,11 @@
-import { useState } from 'react'
+ import { useState } from 'react'
 import { useGetMyOrdersQuery } from '@/features/orders/ordersApiSlice'
 import { FaSearch, FaFilter, FaEye, FaDownload, FaShoppingCart } from 'react-icons/fa'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 
 const MyOrders = () => {
-  const { data: orders, isLoading } = useGetMyOrdersQuery()
+  const { data: orders = [], isLoading } = useGetMyOrdersQuery()
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [selectedOrder, setSelectedOrder] = useState(null)
@@ -19,13 +19,13 @@ const MyOrders = () => {
     { value: 'delivered', label: 'Delivered' },
   ]
 
-  const filteredOrders = orders?.filter(order => {
-    const matchesSearch = 
+  const filteredOrders = (orders || []).filter((order) => {
+    const matchesSearch =
       order.id.toString().includes(searchQuery) ||
-      order.product_name?.toLowerCase().includes(searchQuery.toLowerCase())
-    
+      (order.product_name || '').toLowerCase().includes(searchQuery.toLowerCase())
+
     const matchesStatus = filterStatus === 'all' || order.status === filterStatus
-    
+
     return matchesSearch && matchesStatus
   })
 
@@ -48,13 +48,10 @@ const MyOrders = () => {
 
   return (
     <div className="p-6">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold mb-2">My Orders</h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Track and manage all your orders
-          </p>
+          <p className="text-gray-600 dark:text-gray-400">Track and manage all your orders</p>
         </div>
         <button className="btn-primary flex items-center space-x-2">
           <FaShoppingCart />
@@ -65,31 +62,15 @@ const MyOrders = () => {
       {/* Filters */}
       <div className="card mb-6">
         <div className="flex flex-col md:flex-row gap-4">
-          {/* Search */}
           <div className="relative flex-1">
             <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by order ID or product..."
-              className="input-field pl-10 w-full"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+            <input type="text" placeholder="Search by order ID or product..." className="input-field pl-10 w-full" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
 
-          {/* Status Filter */}
           <div className="flex items-center space-x-2">
             <FaFilter className="text-gray-400" />
-            <select
-              className="input-field w-full md:w-48"
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-            >
-              {statusOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
+            <select className="input-field w-full md:w-48" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+              {statusOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
           </div>
         </div>
@@ -104,15 +85,8 @@ const MyOrders = () => {
       ) : filteredOrders && filteredOrders.length > 0 ? (
         <div className="grid grid-cols-1 gap-4">
           {filteredOrders.map((order, index) => (
-            <motion.div
-              key={order.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className="card hover:shadow-lg transition-shadow"
-            >
+            <motion.div key={order.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }} className="card hover:shadow-lg transition-shadow">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                {/* Order Info */}
                 <div className="flex-1">
                   <div className="flex items-start justify-between mb-3">
                     <div>
@@ -122,16 +96,11 @@ const MyOrders = () => {
                           {order.status || 'pending'}
                         </span>
                       </div>
-                      <p className="text-gray-600 dark:text-gray-400 mb-1">
-                        {order.product_name || 'Product Name'}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        Placed on {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
-                      </p>
+                      <p className="text-gray-600 dark:text-gray-400 mb-1">{order.product_name || 'Product Name'}</p>
+                      <p className="text-sm text-gray-500">Placed on {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}</p>
                     </div>
                   </div>
 
-                  {/* Order Details */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Quantity</p>
@@ -143,18 +112,13 @@ const MyOrders = () => {
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Delivery Date</p>
-                      <p className="font-semibold">
-                        {order.delivery_date ? new Date(order.delivery_date).toLocaleDateString() : 'TBD'}
-                      </p>
+                      <p className="font-semibold">{order.delivery_date ? new Date(order.delivery_date).toLocaleDateString() : 'TBD'}</p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Progress</p>
                       <div className="flex items-center space-x-2">
                         <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                          <div 
-                            className="bg-primary-600 h-2 rounded-full transition-all" 
-                            style={{ width: `${order.progress || 0}%` }}
-                          ></div>
+                          <div className="bg-primary-600 h-2 rounded-full transition-all" style={{ width: `${order.progress || 0}%` }} />
                         </div>
                         <span className="text-xs font-medium">{order.progress || 0}%</span>
                       </div>
@@ -164,16 +128,11 @@ const MyOrders = () => {
 
                 {/* Actions */}
                 <div className="flex lg:flex-col gap-2">
-                  <Link
-                    to={`/buyer/orders/${order.id}`}
-                    className="flex-1 lg:flex-none btn-primary text-sm py-2 px-4 text-center flex items-center justify-center space-x-2"
-                  >
-                    <FaEye />
-                    <span>View Details</span>
+                  <Link to={`/buyer/orders/${order.id}`} className="flex-1 lg:flex-none btn-primary text-sm py-2 px-4 text-center flex items-center justify-center space-x-2">
+                    <FaEye /><span>View Details</span>
                   </Link>
                   <button className="flex-1 lg:flex-none btn-secondary text-sm py-2 px-4 flex items-center justify-center space-x-2">
-                    <FaDownload />
-                    <span>Invoice</span>
+                    <FaDownload /><span>Invoice</span>
                   </button>
                 </div>
               </div>
@@ -182,16 +141,13 @@ const MyOrders = () => {
               {(order.status === 'production' || order.status === 'qc' || order.status === 'shipped') && (
                 <div className="mt-4 pt-4 border-t border-gray-200 dark:border-dark-border">
                   <div className="flex items-center justify-between text-xs">
-                    {['Order Placed', 'Production', 'QC', 'Shipped', 'Delivered'].map((step, index) => {
+                    {['Order Placed', 'Production', 'QC', 'Shipped', 'Delivered'].map((step, idx) => {
                       const statusIndex = ['pending', 'production', 'qc', 'shipped', 'delivered'].indexOf(order.status)
-                      const isCompleted = index <= statusIndex
-                      
+                      const isCompleted = idx <= statusIndex
                       return (
-                        <div key={index} className="flex flex-col items-center">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 ${
-                            isCompleted ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-400'
-                          }`}>
-                            {isCompleted ? '✓' : index + 1}
+                        <div key={idx} className="flex flex-col items-center">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 ${isCompleted ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-400'}`}>
+                            {isCompleted ? '✓' : idx + 1}
                           </div>
                           <span className={isCompleted ? 'font-medium' : 'text-gray-400'}>{step}</span>
                         </div>
@@ -207,16 +163,8 @@ const MyOrders = () => {
         <div className="card text-center py-12">
           <FaShoppingCart className="text-6xl text-gray-300 mx-auto mb-4" />
           <h3 className="text-xl font-semibold mb-2">No orders found</h3>
-          <p className="text-gray-500 mb-6">
-            {searchQuery || filterStatus !== 'all' 
-              ? 'Try adjusting your filters' 
-              : "You haven't placed any orders yet"}
-          </p>
-          {!searchQuery && filterStatus === 'all' && (
-            <button className="btn-primary">
-              Place Your First Order
-            </button>
-          )}
+          <p className="text-gray-500 mb-6">{searchQuery || filterStatus !== 'all' ? 'Try adjusting your filters' : "You haven't placed any orders yet"}</p>
+          {!searchQuery && filterStatus === 'all' && (<button className="btn-primary">Place Your First Order</button>)}
         </div>
       )}
 
@@ -230,21 +178,15 @@ const MyOrders = () => {
               <p className="text-sm text-gray-600 dark:text-gray-400">Total Orders</p>
             </div>
             <div className="text-center p-4 bg-gray-50 dark:bg-dark-bg rounded-lg">
-              <p className="text-2xl font-bold text-yellow-600">
-                {filteredOrders.filter(o => o.status === 'production').length}
-              </p>
+              <p className="text-2xl font-bold text-yellow-600">{filteredOrders.filter(o => o.status === 'production').length}</p>
               <p className="text-sm text-gray-600 dark:text-gray-400">In Production</p>
             </div>
             <div className="text-center p-4 bg-gray-50 dark:bg-dark-bg rounded-lg">
-              <p className="text-2xl font-bold text-green-600">
-                {filteredOrders.filter(o => o.status === 'delivered').length}
-              </p>
+              <p className="text-2xl font-bold text-green-600">{filteredOrders.filter(o => o.status === 'delivered').length}</p>
               <p className="text-sm text-gray-600 dark:text-gray-400">Delivered</p>
             </div>
             <div className="text-center p-4 bg-gray-50 dark:bg-dark-bg rounded-lg">
-              <p className="text-2xl font-bold text-purple-600">
-                ${filteredOrders.reduce((sum, o) => sum + (parseFloat(o.total_amount) || 0), 0).toFixed(2)}
-              </p>
+              <p className="text-2xl font-bold text-purple-600">${filteredOrders.reduce((sum, o) => sum + (parseFloat(o.total_amount) || 0), 0).toFixed(2)}</p>
               <p className="text-sm text-gray-600 dark:text-gray-400">Total Value</p>
             </div>
           </div>
