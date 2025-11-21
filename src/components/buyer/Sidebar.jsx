@@ -1,4 +1,4 @@
- import React from "react";
+import React from "react";
 import { useSearchParams } from "react-router-dom";
 
 import MyOrders from "./MyOrders";
@@ -24,6 +24,7 @@ export default function BuyerDashboard() {
         return <TrackShipment />;
       case "profile":
         return <ProfilePage />;
+
       default:
         return (
           <div className="space-y-8">
@@ -31,7 +32,7 @@ export default function BuyerDashboard() {
             <div className="bg-gradient-to-r from-primary-600 to-primary-500 text-white p-10 rounded-2xl shadow-lg">
               <h1 className="text-3xl font-bold">Welcome Back 👋</h1>
               <p className="text-blue-100 mt-3 text-lg">
-                Manage orders, documents, wishlist & shipments — all in one smart dashboard.
+                Manage orders, documents, wishlist & shipments — all in one dashboard.
               </p>
             </div>
 
@@ -64,16 +65,20 @@ export default function BuyerDashboard() {
                 Use the sidebar to explore your dashboard options.
               </p>
             </div>
+
           </div>
         );
     }
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex bg-gray-100 dark:bg-gray-900 min-h-screen">
 
-      {/* Main Content */}
-      <div className="flex-1 p-6 sm:p-8 pt-20">
+      {/* FIXED SIDEBAR */}
+      <Sidebar />
+
+      {/* CONTENT WITH LEFT PADDING (64 = 16rem fixed sidebar width) */}
+      <div className="flex-1 p-6 sm:p-8 pt-20 md:ml-64">
         <div className="max-w-7xl mx-auto space-y-8">
           {renderContent()}
         </div>

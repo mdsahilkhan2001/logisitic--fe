@@ -4,56 +4,54 @@ import { Toaster } from 'react-hot-toast'
 import { useAuth } from './hooks/useAuth'
 import { useGetMeQuery } from './features/auth/authApiSlice'
 
-// Layouts (Non-lazy loaded for instant rendering)
+// Layouts
 import PublicLayout from './layouts/PublicLayout'
 import DashboardLayout from './layouts/DashboardLayout'
 import AuthLayout from './layouts/AuthLayout'
 
-// Auth Components (Non-lazy for login speed)
+// Auth
 import Login from './components/auth/Login'
 import RegisterPage from './pages/RegisterPage'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import RoleRoute from './components/auth/RoleRoute'
 
-// Common Components
+// Common
 import Loader from './components/common/Loader'
 import ErrorBoundary from './components/common/ErrorBoundary'
 
-// Lazy-loaded Public Pages
+// Lazy Public
 const Home = lazy(() => import('./components/public/Home'))
 const About = lazy(() => import('./components/public/About'))
-// Replace legacy Products component with new ProductsPage
 const Products = lazy(() => import('./pages/ProductsPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 const SellerPage = lazy(() => import('./pages/SellerPage'))
 const Services = lazy(() => import('./components/public/Services'))
 const Contact = lazy(() => import('./components/public/Contact'))
 
-// Lazy-loaded Role Dashboards
-const BuyerDashboard = lazy(() => import('./components/buyer/BuyerDashboard'))
-const MyOrders = lazy(() => import('./components/buyer/MyOrders'))
-const DocumentsView = lazy(() => import('./components/buyer/DocumentsView'))
-const TrackShipment = lazy(() => import('./components/buyer/TrackShipment'))
-const Wishlist = lazy(() => import('./components/buyer/Wishlist'))
+// Lazy Buyer
+import BuyerRoutes from './routes/BuyerRoutes'   // <-- IMPORTANT
 
+// Salesman
 const SalesmanDashboard = lazy(() => import('./components/salesman/SalesmanDashboard'))
 const LeadsBoard = lazy(() => import('./components/salesman/LeadsBoard'))
 const CreateCosting = lazy(() => import('./components/salesman/CreateCosting'))
 const GeneratePI = lazy(() => import('./components/salesman/GeneratePI'))
 const CommissionReport = lazy(() => import('./components/salesman/CommissionReport'))
 
+// Designer
 const DesignerDashboard = lazy(() => import('./components/designer/DesignerDashboard'))
 const AssignedOrders = lazy(() => import('./components/designer/AssignedOrders'))
 const UploadDesign = lazy(() => import('./components/designer/UploadDesign'))
 const ProductionTimeline = lazy(() => import('./components/designer/ProductionTimeline'))
 
+// Admin
 const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard'))
 const CRMBoard = lazy(() => import('./components/admin/CRMBoard'))
 const UserManagement = lazy(() => import('./components/admin/UserManagement'))
 const Analytics = lazy(() => import('./components/admin/Analytics'))
 const DocumentTemplates = lazy(() => import('./components/admin/DocumentTemplates'))
 
-// Error Pages
+// Errors
 const NotFound = lazy(() => import('./components/error/NotFound'))
 const Unauthorized = lazy(() => import('./components/error/Unauthorized'))
 
@@ -61,10 +59,9 @@ function App() {
   const { isAuthenticated, user, token } = useAuth()
   useGetMeQuery(undefined, { skip: !token, refetchOnMountOrArgChange: false })
 
-  // Auto-redirect to role dashboard if already logged in
   const getDefaultRedirect = () => {
     if (!isAuthenticated || !user) return '/login'
-    
+
     const roleRoutes = {
       buyer: '/buyer',
       seller: '/seller',
@@ -72,64 +69,43 @@ function App() {
       designer: '/designer',
       admin: '/admin',
     }
-    
+
     return roleRoutes[user.role] || '/'
   }
-
   return (
     <ErrorBoundary>
-      <Toaster 
-        position="bottom-right"
-        toastOptions={{
-          duration: 2800,
-          style: {
-            background: '#1f2937',
-            color: '#f9fafb',
-            borderRadius: '16px',
-            padding: '12px 16px',
-            border: '1px solid #374151',
-          },
-          success: {
-            duration: 3000,
-            iconTheme: {
-              primary: '#10b981',
-              secondary: '#fff',
-            },
-          },
-          error: {
-            duration: 3500,
-            iconTheme: {
-              primary: '#ef4444',
-              secondary: '#fff',
-            },
-          },
-        }}
-      />
-      
+      <Toaster position="bottom-right" />
+
       <Suspense fallback={<Loader />}>
         <Routes>
-          {/* Public Routes */}
+
+          {/* PUBLIC ROUTES */}
           <Route element={<PublicLayout />}>
             <Route path="/" element={<Home />} />
-            <Route path="/buyer" element={<Home />} />
+            {/* <Route path="/buyer" element={<Home />} /> */}
+            {/* <Route path="/buyer/*" element={<BuyerRoutes />} /> */}
             <Route path="/about" element={<About />} />
             <Route path="/products" element={<Products />} />
-            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            } />
             <Route path="/services" element={<Services />} />
             <Route path="/contact" element={<Contact />} />
           </Route>
 
-          {/* Auth Routes */}
+          {/* AUTH ROUTES */}
           <Route element={<AuthLayout />}>
-            <Route 
-              path="/login" 
+            <Route
+              path="/login"
               element={
                 isAuthenticated ? (
                   <Navigate to={getDefaultRedirect()} replace />
                 ) : (
                   <Login />
                 )
-              } 
+              }
             />
             <Route
               path="/register"
@@ -143,7 +119,7 @@ function App() {
             />
           </Route>
 
-          {/* Protected Dashboard Routes */}
+          {/* PROTECTED DASHBOARD LAYOUT (FOR ADMIN/SELLER/SALESMAN/DESIGNER) */}
           <Route
             element={
               <ProtectedRoute>
@@ -151,25 +127,8 @@ function App() {
               </ProtectedRoute>
             }
           >
-            {/* Buyer Routes */}
-            <Route
-              path="/buyer/*"
-              element={
-                <RoleRoute allowedRoles={['buyer']}>
-                  <Routes>
-                    <Route index element={<Navigate to="/buyer?view=dashboard" replace />} />
-                    <Route path="orders" element={<Navigate to="/buyer?view=orders" replace />} />
-                    <Route path="wishlist" element={<Navigate to="/buyer?view=wishlist" replace />} />
-                    <Route path="documents" element={<Navigate to="/buyer?view=documents" replace />} />
-                    <Route path="shipments" element={<Navigate to="/buyer?view=trackorder" replace />} />
-                    <Route path="profile" element={<Navigate to="/buyer?view=profile" replace />} />
-                    <Route path="*" element={<Navigate to="/buyer" replace />} />
-                  </Routes>
-                </RoleRoute>
-              }
-            />
 
-            {/* Salesman Routes */}
+            {/* SALESMAN */}
             <Route
               path="/salesman/*"
               element={
@@ -188,7 +147,7 @@ function App() {
               }
             />
 
-            {/* Designer Routes */}
+            {/* DESIGNER */}
             <Route
               path="/designer/*"
               element={
@@ -206,7 +165,7 @@ function App() {
               }
             />
 
-            {/* Admin Routes */}
+            {/* ADMIN */}
             <Route
               path="/admin/*"
               element={
@@ -223,23 +182,26 @@ function App() {
               }
             />
 
-            {/* Seller Routes */}
+            {/* SELLER */}
             <Route
               path="/seller/*"
               element={
-                <RoleRoute allowedRoles={['seller','admin']}>
+                <RoleRoute allowedRoles={['seller', 'admin']}>
                   <SellerPage />
                 </RoleRoute>
               }
             />
+
           </Route>
 
-          {/* Error Routes */}
+          {/* BUYER OUTSIDE DASHBOARDLAYOUT */}
+          <Route path="/buyer/*" element={<BuyerRoutes />} />
+
+          {/* ERRORS */}
           <Route path="/unauthorized" element={<Unauthorized />} />
           <Route path="/404" element={<NotFound />} />
-          
-          {/* Catch all - redirect to 404 */}
           <Route path="*" element={<Navigate to="/404" replace />} />
+
         </Routes>
       </Suspense>
     </ErrorBoundary>

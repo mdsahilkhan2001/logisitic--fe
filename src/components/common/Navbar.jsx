@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   FaShoppingBag,
@@ -7,29 +7,51 @@ import {
   FaSignOutAlt,
   FaSignInAlt,
   FaUserPlus,
-  FaSearch,
-  FaAlignJustify,
+  FaChevronDown,
   FaUserCircle,
+  FaBell,
 } from 'react-icons/fa'
 import { motion, AnimatePresence } from 'framer-motion'
+
 import ThemeToggle from './ThemeToggle'
 import { useAuth } from '../../hooks/useAuth'
 import { useDispatch } from 'react-redux'
 import { logout } from '../../features/auth/authSlice'
-import { useAuthModal } from '@/context/AuthModalContext'
-import buyerNavItems from '@/constants/buyerNavItems'
-import sellerNavItems from '@/constants/sellerNavItems'
+
+import { useAuthModal } from '../../context/AuthModalContext'
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [isDashboardOpen, setIsDashboardOpen] = useState(false)
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
+
   const { isAuthenticated, user } = useAuth()
   const { openLogin, openRegister, requireAuth } = useAuthModal()
-  const dispatch = useDispatch()
   const navigate = useNavigate()
+  const dispatch = useDispatch()
 
   const isBuyer = isAuthenticated && user?.role === 'buyer'
   const isSeller = isAuthenticated && user?.role === 'seller'
+
+  // Scroll detection for navbar style
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20)
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (isProfileOpen && !e.target.closest('.profile-dropdown')) {
+        setIsProfileOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isProfileOpen])
 
   const navLinks = [
     { path: '/', label: 'Home' },
@@ -39,67 +61,63 @@ const Navbar = () => {
     { path: '/contact', label: 'Contact' },
   ]
 
-  const buyerDashboardMenuItem = buyerNavItems.find((item) => item.id === 'dashboard')
-  const sellerDashboardMenuItem = sellerNavItems.find((item) => item.id === 'overview')
-
-  const handleDashboardNavigation = (item) => {
-    const target = item?.overlayTo || item?.sidebarTo || item?.to
-    setIsDashboardOpen(false)
+  const openBuyerDashboard = () => {
+    navigate("/buyer?view=dashboard")
     setIsMenuOpen(false)
-    if (!target) {
-      return
-    }
+    setIsProfileOpen(false)
+  }
 
-    navigate(target)
+  const openSellerDashboard = () => {
+    navigate("/salesman")
+    setIsMenuOpen(false)
+    setIsProfileOpen(false)
   }
 
   const handleProfileNavigate = () => {
-    if (isBuyer) {
-      navigate({ pathname: '/buyer', search: '?view=profile' })
-    } else if (isSeller) {
-      navigate('/profile')
-    } else {
-      navigate('/profile')
-    }
-    setIsDashboardOpen(false)
+    navigate(isBuyer ? '/buyer?view=profile' : '/profile')
     setIsMenuOpen(false)
+    setIsProfileOpen(false)
   }
 
   const handleLogout = () => {
     dispatch(logout())
-    setIsDashboardOpen(false)
-    setIsMenuOpen(false)
     navigate('/')
+    setIsMenuOpen(false)
+    setIsProfileOpen(false)
   }
 
-  const showDashboardPanel = (isBuyer || isSeller) && isDashboardOpen
-  const activeDashboardItems = isBuyer ? buyerNavItems : isSeller ? sellerNavItems : []
-  const dashboardTitle = isBuyer ? 'Buyer Dashboard' : 'Seller Workspace'
-  const dashboardSubtitle = isBuyer
-    ? 'Quick access to your essentials'
-    : 'Manage your catalog, leads, and orders in one place'
-  const profileSubtitle = isBuyer ? 'View profile details' : 'Update your seller profile'
-  const anonymousRoleLabel = isBuyer ? 'Buyer' : 'Seller'
-
   return (
-    <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50 shadow-sm">
-      <div className="container mx-auto px-4">
+    <nav 
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled 
+          ? 'bg-white/90 dark:bg-gray-900/90 backdrop-blur-md shadow-lg' 
+          : 'bg-white dark:bg-gray-900 shadow-sm'
+      } border-b border-gray-200 dark:border-gray-800`}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
+
+          {/* LOGO */}
           <Link to="/" className="flex items-center space-x-2 group">
-            <motion.div
-              whileHover={{ rotate: 360 }}
-              transition={{ duration: 0.5 }}
+            <motion.div 
+              whileHover={{ scale: 1.05 }} 
+              whileTap={{ scale: 0.95 }}
+              className="bg-gradient-to-br from-primary-500 to-primary-600 p-2 rounded-lg shadow-md"
             >
-              <FaShoppingBag className="text-2xl text-blue-600 group-hover:text-blue-700" />
+              <FaShoppingBag className="text-lg text-white" />
             </motion.div>
-            <span className="text-xl font-bold text-gray-900 dark:text-white">
-              GarmentExport
-            </span>
+            <div className="flex flex-col">
+              <span className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+                GarmentExport
+              </span>
+              <span className="hidden sm:block text-[9px] text-gray-500 dark:text-gray-400 font-medium tracking-wider uppercase">
+                Premium Quality
+              </span>
+            </div>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-1">
+          {/* DESKTOP NAV LINKS */}
+          <div className="hidden lg:flex items-center space-x-1">
             {navLinks.map((link) => (
               <Link
                 key={link.path}
@@ -108,381 +126,244 @@ const Navbar = () => {
                   if (link.requiresAuth && !isAuthenticated) {
                     e.preventDefault()
                     requireAuth()
-                    return
                   }
-                  if (!link.requiresAuth && link.path === '/' && !isAuthenticated) {
-                    setIsMenuOpen(false)
-                  }
-                  setIsDashboardOpen(false)
                 }}
-                className="px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium"
+                className="relative px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors group"
               >
                 {link.label}
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-primary-600 group-hover:w-3/4 transition-all duration-300"></span>
               </Link>
             ))}
           </div>
 
-          {/* Right Section */}
-          <div className="hidden md:flex items-center space-x-4">
-            <div className="relative">
-              <input
-                type="search"
-                placeholder="Search for products, brands and more"
-                className="w-72 px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-              <FaSearch className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500" />
-            </div>
+          {/* RIGHT SIDE */}
+          <div className="hidden lg:flex items-center space-x-3">
+
+            {/* Notifications */}
+            {isAuthenticated && (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                aria-label="Notifications"
+              >
+                <FaBell className="text-gray-600 dark:text-gray-300" />
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-semibold">
+                  3
+                </span>
+              </motion.button>
+            )}
+
             <ThemeToggle />
 
+            {/* IF LOGGED IN - Profile Dropdown */}
             {isAuthenticated ? (
-              isBuyer ? (
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={handleProfileNavigate}
-                    className="flex items-center gap-3 px-3 py-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-                  >
-                    <div className="w-10 h-10 rounded-full overflow-hidden bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
-                      {user?.profile_picture ? (
-                        <img src={user.profile_picture} alt="Profile" className="w-full h-full object-cover" />
-                      ) : user?.username ? (
-                        <span className="text-sm font-semibold text-primary-600">
-                          {user.username.slice(0, 2).toUpperCase()}
-                        </span>
-                      ) : (
-                        <FaUserCircle className="text-xl text-primary-600" />
-                      )}
-                    </div>
-                    <div className="text-left">
-                      <p className="text-sm font-semibold leading-tight">{user?.first_name || user?.username || 'Buyer'}</p>
-                      <p className="text-xs text-gray-500 capitalize">View profile</p>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => setIsDashboardOpen(true)}
-                    className="flex items-center justify-center w-12 h-12 rounded-full bg-primary-600 hover:bg-primary-700 text-white transition"
-                    aria-label="Open dashboard"
-                  >
-                    <FaAlignJustify className="text-xl" />
-                  </button>
-                </div>
-              ) : isSeller ? (
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={handleProfileNavigate}
-                    className="flex items-center gap-3 px-3 py-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-                  >
-                    <div className="w-10 h-10 rounded-full overflow-hidden bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
-                      {user?.profile_picture ? (
-                        <img src={user.profile_picture} alt="Profile" className="w-full h-full object-cover" />
-                      ) : user?.username ? (
-                        <span className="text-sm font-semibold text-primary-600">
-                          {user.username.slice(0, 2).toUpperCase()}
-                        </span>
-                      ) : (
-                        <FaUserCircle className="text-xl text-primary-600" />
-                      )}
-                    </div>
-                    <div className="text-left">
-                      <p className="text-sm font-semibold leading-tight">{user?.first_name || user?.username || 'Seller'}</p>
-                      <p className="text-xs text-gray-500 capitalize">Manage profile</p>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => setIsDashboardOpen(true)}
-                    className="flex items-center justify-center w-12 h-12 rounded-full bg-primary-600 hover:bg-primary-700 text-white transition"
-                    aria-label="Open seller workspace"
-                  >
-                    <FaAlignJustify className="text-xl" />
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-red-500 hover:bg-red-600 text-white transition"
+              <div className="relative profile-dropdown">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setIsProfileOpen(!isProfileOpen)}
+                  className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 transition-all"
                 >
-                  <FaSignOutAlt />
-                  <span>Logout</span>
-                </button>
-              )
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm">
+                    {user?.username ? (
+                      <span className="font-semibold text-white text-xs">
+                        {user.username.slice(0, 2).toUpperCase()}
+                      </span>
+                    ) : (
+                      <FaUserCircle className="text-base text-white" />
+                    )}
+                  </div>
+                  <div className="text-left hidden xl:block">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-tight">
+                      {user?.first_name || user?.username}
+                    </p>
+                    <p className="text-xs text-primary-600 dark:text-primary-400 font-medium">
+                      {isBuyer ? "Buyer" : "Seller"}
+                    </p>
+                  </div>
+                  <FaChevronDown className={`text-gray-500 dark:text-gray-400 text-xs transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
+                </motion.button>
+
+                {/* Dropdown Menu */}
+                <AnimatePresence>
+                  {isProfileOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+                    >
+                      <div className="p-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                        <p className="font-semibold text-gray-900 dark:text-white text-sm">{user?.first_name || user?.username}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{user?.email}</p>
+                      </div>
+                      
+                      <div className="p-2">
+                        <button
+                          onClick={handleProfileNavigate}
+                          className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm font-medium text-gray-700 dark:text-gray-300"
+                        >
+                          👤 View Profile
+                        </button>
+                        <button
+                          onClick={isBuyer ? openBuyerDashboard : openSellerDashboard}
+                          className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm font-medium text-gray-700 dark:text-gray-300"
+                        >
+                          📊 Dashboard
+                        </button>
+                        <button
+                          className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm font-medium text-gray-700 dark:text-gray-300"
+                        >
+                          ⚙️ Settings
+                        </button>
+                      </div>
+
+                      <div className="p-2 border-t border-gray-100 dark:border-gray-700">
+                        <button
+                          onClick={handleLogout}
+                          className="w-full text-left px-3 py-2 rounded-md bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 transition-colors text-sm font-semibold text-red-600 dark:text-red-400 flex items-center gap-2"
+                        >
+                          <FaSignOutAlt /> Logout
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             ) : (
-              <div className="flex items-center gap-3">
-                <button
+              <div className="flex items-center gap-2">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={openLogin}
-                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary-600 hover:bg-primary-700 text-white transition"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg border border-primary-600 text-primary-600 dark:text-primary-400 font-semibold hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all text-sm"
                 >
-                  <FaSignInAlt />
-                  <span>Login</span>
-                </button>
-                <button
+                  <FaSignInAlt /> Login
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={openRegister}
-                  className="flex items-center gap-2 px-4 py-2 rounded-full border border-primary-600 text-primary-600 hover:bg-primary-50 transition"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold shadow-md transition-all text-sm"
                 >
-                  <FaUserPlus />
-                  <span>Register</span>
-                </button>
+                  <FaUserPlus /> Register
+                </motion.button>
               </div>
             )}
           </div>
 
-          {/* Mobile Menu Button */}
-          <div className="flex items-center space-x-3 md:hidden">
+          {/* MOBILE MENU BUTTON */}
+          <div className="lg:hidden flex items-center gap-2">
             <ThemeToggle />
-            <button
+            {isAuthenticated && (
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                aria-label="Notifications"
+              >
+                <FaBell className="text-gray-600 dark:text-gray-300 text-sm" />
+                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 text-white text-[9px] rounded-full flex items-center justify-center font-semibold">
+                  3
+                </span>
+              </motion.button>
+            )}
+            <motion.button
+              whileTap={{ scale: 0.9 }}
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Menu"
             >
-              {isMenuOpen ? <FaTimes className="text-2xl" /> : <FaBars className="text-2xl" />}
-            </button>
+              {isMenuOpen ? <FaTimes className="text-xl" /> : <FaBars className="text-xl" />}
+            </motion.button>
           </div>
         </div>
-
-        {/* Mobile Menu */}
-        <AnimatePresence>
-          {isMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="md:hidden border-t border-gray-200 dark:border-gray-700 overflow-hidden"
-            >
-              <div className="py-4 space-y-2">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.path}
-                    to={link.path}
-                    onClick={(e) => {
-                      if (link.requiresAuth && !isAuthenticated) {
-                        e.preventDefault()
-                        requireAuth()
-                        return
-                      }
-                      setIsMenuOpen(false)
-                      setIsDashboardOpen(false)
-                    }}
-                    className="block px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition font-medium"
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-                
-                <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                  {isAuthenticated ? (
-                    isBuyer ? (
-                      <div className="flex flex-col gap-3 px-4">
-                        <button
-                          onClick={() => {
-                            handleProfileNavigate()
-                            setIsMenuOpen(false)
-                          }}
-                          className="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-semibold transition hover:bg-gray-200 dark:hover:bg-gray-700"
-                        >
-                          <span>Profile</span>
-                          <FaUserCircle className="text-lg" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setIsMenuOpen(false)
-                            if (buyerDashboardMenuItem) {
-                              handleDashboardNavigation(buyerDashboardMenuItem)
-                            } else {
-                              setIsDashboardOpen(true)
-                            }
-                          }}
-                          className="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold transition"
-                        >
-                          <span>Open Dashboard</span>
-                          <FaAlignJustify />
-                        </button>
-                        <button
-                          onClick={() => {
-                            handleLogout()
-                            setIsMenuOpen(false)
-                          }}
-                          className="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-red-500 hover:bg-red-600 text-white font-semibold transition"
-                        >
-                          <span>Logout</span>
-                          <FaSignOutAlt />
-                        </button>
-                      </div>
-                    ) : isSeller ? (
-                      <div className="flex flex-col gap-3 px-4">
-                        <button
-                          onClick={() => {
-                            handleProfileNavigate()
-                            setIsMenuOpen(false)
-                          }}
-                          className="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-semibold transition hover:bg-gray-200 dark:hover:bg-gray-700"
-                        >
-                          <span>Profile</span>
-                          <FaUserCircle className="text-lg" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setIsMenuOpen(false)
-                            if (sellerDashboardMenuItem) {
-                              handleDashboardNavigation(sellerDashboardMenuItem)
-                            } else {
-                              setIsDashboardOpen(true)
-                            }
-                          }}
-                          className="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold transition"
-                        >
-                          <span>Open Workspace</span>
-                          <FaAlignJustify />
-                        </button>
-                        <button
-                          onClick={() => {
-                            handleLogout()
-                            setIsMenuOpen(false)
-                          }}
-                          className="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-red-500 hover:bg-red-600 text-white font-semibold transition"
-                        >
-                          <span>Logout</span>
-                          <FaSignOutAlt />
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          handleLogout()
-                          setIsMenuOpen(false)
-                        }}
-                        className="block w-full bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-lg mx-4 text-center font-semibold transition"
-                        style={{ width: 'calc(100% - 2rem)' }}
-                      >
-                        Logout
-                      </button>
-                    )
-                  ) : (
-                    <div className="flex flex-col gap-3 px-4">
-                      <button
-                        onClick={() => { openLogin(); setIsMenuOpen(false) }}
-                        className="w-full bg-primary-600 hover:bg-primary-700 text-white px-4 py-3 rounded-lg font-semibold transition"
-                      >
-                        Login
-                      </button>
-                      <button
-                        onClick={() => { openRegister(); setIsMenuOpen(false) }}
-                        className="w-full border border-primary-600 text-primary-600 hover:bg-primary-50 px-4 py-3 rounded-lg font-semibold transition"
-                      >
-                        Register
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
+      {/* MOBILE MENU */}
       <AnimatePresence>
-        {showDashboardPanel && (
+        {isMenuOpen && (
           <motion.div
-            key="role-dashboard"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[999] flex justify-end"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="lg:hidden bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800"
           >
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="flex-1 bg-black/40 backdrop-blur-sm"
-              onClick={() => setIsDashboardOpen(false)}
-            ></motion.div>
-            <motion.aside
-              initial={{ x: 320 }}
-              animate={{ x: 0 }}
-              exit={{ x: 320 }}
-              transition={{ type: 'spring', stiffness: 320, damping: 32 }}
-              className="w-full max-w-xs sm:max-w-sm md:max-w-md bg-white dark:bg-gray-900 h-full shadow-2xl border-l border-gray-200 dark:border-gray-800"
-            >
-              <div className="h-full flex flex-col">
-                <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200 dark:border-gray-800">
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{dashboardTitle}</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{dashboardSubtitle}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsDashboardOpen(false)}
-                    className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-                  >
-                    <FaTimes />
-                  </button>
-                </div>
+            <div className="px-4 py-3 space-y-1 max-h-[calc(100vh-4rem)] overflow-y-auto">
 
-                <div className="px-6 pt-6">
-                  <button
-                    type="button"
-                    onClick={handleProfileNavigate}
-                    className="w-full flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-500/30 transition hover:from-primary-500 hover:to-primary-600"
-                  >
-                    <div className="w-14 h-14 rounded-full overflow-hidden bg-white/20 flex items-center justify-center">
-                      {user?.profile_picture ? (
-                        <img src={user.profile_picture} alt="Profile" className="w-full h-full object-cover" />
-                      ) : user?.username ? (
-                        <span className="text-lg font-semibold">
-                          {user.username.slice(0, 2).toUpperCase()}
-                        </span>
-                      ) : (
-                        <FaUserCircle className="text-2xl" />
-                      )}
+              {navLinks.map((link) => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  onClick={(e) => {
+                    if (link.requiresAuth && !isAuthenticated) {
+                      e.preventDefault()
+                      requireAuth()
+                    }
+                    setIsMenuOpen(false)
+                  }}
+                  className="block px-4 py-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium text-gray-700 dark:text-gray-300"
+                >
+                  {link.label}
+                </Link>
+              ))}
+
+              <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-800 space-y-2">
+                {isAuthenticated ? (
+                  <>
+                    <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg mb-2">
+                      <p className="font-semibold text-gray-900 dark:text-white text-sm">{user?.first_name || user?.username}</p>
+                      <p className="text-xs text-primary-600 dark:text-primary-400 mt-0.5">{isBuyer ? "Buyer" : "Seller"} Account</p>
                     </div>
-                    <div className="text-left">
-                      <p className="text-xs uppercase tracking-wide opacity-80">Signed in as</p>
-                      <p className="text-lg font-semibold leading-tight">{user?.first_name || user?.username || anonymousRoleLabel}</p>
-                      <p className="text-sm opacity-80">{profileSubtitle}</p>
-                    </div>
-                  </button>
-                </div>
-
-                <div className="flex-1 overflow-y-auto px-6 py-6 space-y-2">
-                  {activeDashboardItems
-                    .filter((item) => item.id !== 'profile')
-                    .map((item) => {
-                    const Icon = item.icon
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => handleDashboardNavigation(item)}
-                        className="w-full flex items-center gap-4 p-4 rounded-lg border border-gray-200 dark:border-gray-800 text-left hover:border-primary-500 hover:bg-primary-50/80 dark:hover:bg-primary-900/10 transition"
-                      >
-                        <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center">
-                          <Icon className="text-primary-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{item.label}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{item.description}</p>
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-
-                <div className="px-6 py-6 border-t border-gray-200 dark:border-gray-800">
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg bg-red-500 hover:bg-red-600 text-white font-semibold transition"
-                  >
-                    <FaSignOutAlt />
-                    <span>Logout</span>
-                  </button>
-                </div>
+                    
+                    <button
+                      onClick={handleProfileNavigate}
+                      className="w-full text-left px-4 py-2.5 bg-gray-100 dark:bg-gray-800 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-sm"
+                    >
+                      👤 Profile
+                    </button>
+                    <button
+                      onClick={isBuyer ? openBuyerDashboard : openSellerDashboard}
+                      className="w-full text-left px-4 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors text-sm"
+                    >
+                      📊 Open Dashboard
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg font-semibold flex items-center gap-2 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-sm"
+                    >
+                      <FaSignOutAlt /> Logout
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => {
+                        openLogin()
+                        setIsMenuOpen(false)
+                      }}
+                      className="w-full border border-primary-600 text-primary-600 px-4 py-2.5 rounded-lg font-semibold hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors text-sm"
+                    >
+                      Login
+                    </button>
+                    <button
+                      onClick={() => {
+                        openRegister()
+                        setIsMenuOpen(false)
+                      }}
+                      className="w-full bg-primary-600 text-white px-4 py-2.5 rounded-lg font-semibold hover:bg-primary-700 transition-colors text-sm"
+                    >
+                      Register
+                    </button>
+                  </>
+                )}
               </div>
-            </motion.aside>
-
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
-      {/* Removed Login/Register Modals */}
     </nav>
   )
 }
