@@ -1,4 +1,4 @@
- import React from "react";
+import React from "react";
 import { useSearchParams } from "react-router-dom";
 
 import MyOrders from "./MyOrders";
@@ -6,7 +6,6 @@ import DocumentsView from "./DocumentsView";
 import Wishlist from "./Wishlist";
 import TrackShipment from "./TrackShipment";
 import ProfilePage from "../../pages/ProfilePage";
-import Sidebar from "./Sidebar";
 
 export default function BuyerDashboard() {
   const [searchParams] = useSearchParams();
@@ -70,15 +69,10 @@ export default function BuyerDashboard() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
-
-      {/* Main Content */}
-      <div className="flex-1 p-6 sm:p-8 pt-20">
-        <div className="max-w-7xl mx-auto space-y-8">
-          {renderContent()}
-        </div>
+    <div className="w-full">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {renderContent()}
       </div>
-
     </div>
   );
 }

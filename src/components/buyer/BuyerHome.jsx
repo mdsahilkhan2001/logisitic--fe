@@ -1,5 +1,5 @@
 import Navbar from "../../components/common/Navbar";
-import Sidebar from "./Sidebar";
+import BuyerSidebar from "./Sidebar";
 import BuyerDashboard from "./BuyerDashboard";
 
 export default function BuyerHome() {
@@ -12,7 +12,7 @@ export default function BuyerHome() {
       <div className="flex pt-16 min-h-screen bg-gray-50 dark:bg-gray-900">
 
         {/* FIXED SIDEBAR */}
-        <Sidebar />
+        <BuyerSidebar />
 
         {/* MAIN CONTENT AREA */}
         <div className="flex-1 p-6 sm:p-8 ml-64">
